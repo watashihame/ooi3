@@ -9,6 +9,8 @@ from aiohttp_session import get_session
 
 from auth.kancolle import KancolleAuth, OOIAuthException
 
+from dbConnect.query import query_user
+
 
 class FrontEndHandler:
     """OOI3前端请求处理类。"""
@@ -54,7 +56,7 @@ class FrontEndHandler:
 
         session['mode'] = mode
 
-        if login_id and password:
+        if login_id and password and query_user(login_id):
             kancolle = KancolleAuth(login_id, password)
             if mode in (1, 2, 3):
                 try:
@@ -83,7 +85,7 @@ class FrontEndHandler:
             else:
                 raise aiohttp.web.HTTPBadRequest()
         else:
-            context = {'errmsg': '请输入完整的登录ID和密码', 'mode': mode}
+            context = {'errmsg': '请输入完整的有效的ID和密码', 'mode': mode}
             return aiohttp_jinja2.render_template('form.html', request, context)
 
     @asyncio.coroutine
