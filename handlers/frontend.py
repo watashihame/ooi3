@@ -9,7 +9,7 @@ from aiohttp_session import get_session
 
 from auth.kancolle import KancolleAuth, OOIAuthException
 
-from dbConnect.query import query_user
+from DbConnect.query import DbQuery
 
 
 class FrontEndHandler:
@@ -55,9 +55,14 @@ class FrontEndHandler:
         mode = int(post.get('mode', 1))
 
         session['mode'] = mode
+        
+        dbc = DbConnect(localhost, 3306, username, password, db)
 
-        if login_id and password and query_user(login_id):
+        if login_id and password and dbc.query(login_id):
             kancolle = KancolleAuth(login_id, password)
+            dbc.update(login_id)
+            dbc.close()
+            del dbc
             if mode in (1, 2, 3):
                 try:
                     yield from kancolle.get_flash()
@@ -86,6 +91,8 @@ class FrontEndHandler:
                 raise aiohttp.web.HTTPBadRequest()
         else:
             context = {'errmsg': '请输入完整的有效的ID和密码', 'mode': mode}
+            dbc.close()
+            del dbc
             return aiohttp_jinja2.render_template('form.html', request, context)
 
     @asyncio.coroutine
